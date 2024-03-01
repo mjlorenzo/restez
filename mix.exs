@@ -7,7 +7,10 @@ defmodule Restez.MixProject do
       version: "0.1.0",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      package: package(),
+      name: "RESTez",
+      source_url: "https://github.com/mjlorenzo/restez"
     ]
   end
 
@@ -21,8 +24,17 @@ defmodule Restez.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
+    ]
+  end
+
+  def package() do
+    [
+      name: "RESTez",
+      maintainers: ["Mike Lorenzo"],
+      licenses: ["MIT"],
+      description: "Library for describing RESTful APIs and autogenerating clients. NOTE: This library is very much still under development, DO NOT USE IN PRODUCTION!",
+      links: %{"Source" => "https://github.com/mjlorenzo/restez"}
     ]
   end
 end

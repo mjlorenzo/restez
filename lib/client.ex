@@ -37,6 +37,8 @@ defmodule RESTez.Client do
   - `opts`: Request-time options supplied to the current execution of your public endpoint function.
   """
 
+  require IEx
+
   @default_parameter_regex ~r/(\{.+?\})/
   @default_inner_regex ~r/\{(.*?)\}/
 
@@ -59,8 +61,8 @@ defmodule RESTez.Client do
     module = Macro.expand(schema, __ENV__)
     defs = module.__schema__() |> Enum.map(fn d -> Keyword.new(d) end)
 
-    parameter_regex = opts[:parameter_regex] || @default_parameter_regex
-    inner_regex = opts[:inner_regex] || @default_inner_regex
+    parameter_regex = (opts[:parameter_regex] || @default_parameter_regex) |> Macro.escape
+    inner_regex = (opts[:inner_regex] || @default_inner_regex) |> Macro.escape
 
     interpolater = Keyword.get(opts, :interpolater) || &RESTez.Schema.interpolate_url/4
 
@@ -68,10 +70,10 @@ defmodule RESTez.Client do
     endpoints = Enum.map(defs, fn d ->
       {id, attrs} = Keyword.pop!(d, :id)
       path = d[:path_template]
-      quote bind_quoted: [interpolater: interpolater, id: id, attrs: attrs, path: path] do
+      quote do
         def unquote(id)(params, opts \\ []) do
           if validate_params(params, unquote(path)) do
-            url = unquote(interpolater).(unquote(path), params)
+            url = unquote(interpolater).(unquote(path), params, unquote(parameter_regex), unquote(inner_regex))
             endpoint(unquote(id), unquote(attrs), url, params, opts)
           else
             {:error, :invalid_params}
@@ -83,11 +85,8 @@ defmodule RESTez.Client do
     quote do
       @behaviour unquote(__MODULE__)
 
-      @parameter_regex unquote(Macro.escape(parameter_regex))
-      @inner_regex unquote(Macro.escape(inner_regex))
-
       defp validate_params(params, url_template) do
-        required = Rule.Val.Schema.get_required_params(url_template, @parameter_regex, @inner_regex)
+        required = RESTez.Schema.get_required_params(url_template, unquote(parameter_regex), unquote(inner_regex))
         required_validated? = Enum.all?(required, &(params[&1]))
         Enum.reduce_while(params, required_validated?, fn p, acc ->
           still_valid? = acc and validate_param(p)
@@ -96,6 +95,7 @@ defmodule RESTez.Client do
       end
 
       defp validate_param({_k, _v}), do: true
+      defoverridable validate_param: 1
 
       unquote(endpoints)
     end

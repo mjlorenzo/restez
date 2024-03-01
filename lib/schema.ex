@@ -1,5 +1,7 @@
 defmodule RESTez.Schema do
 
+  @moduledoc false
+
   require IEx
 
   @attributes_key :__attributes__
@@ -42,11 +44,10 @@ defmodule RESTez.Schema do
 
   def interpolate_url(url, params, parameter_regex, inner_regex) do
     captures = List.flatten(Regex.scan(parameter_regex, url, capture: :all_but_first))
-    interpolated = Enum.reduce(captures, url, fn c, acc ->
+    Enum.reduce(captures, url, fn c, acc ->
       key = String.to_atom(hd(hd(Regex.scan(inner_regex, c, capture: :all_but_first))))
-      String.replace(acc, c, params[key])
+      String.replace(acc, c, params[key] |> to_string())
     end)
-    {:ok, interpolated}
   end
 
   def resolve_attributes(def) do
